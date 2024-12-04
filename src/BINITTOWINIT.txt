@@ -1,0 +1,169 @@
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Scanner;
+
+abstract class WasteManagement {
+    protected String residentName;
+    protected String houseNumber;
+    protected int zone;
+    protected double totalWasteWeight;
+    protected double recycledWasteWeight;
+    protected double generalWasteWeight;
+    protected int recycleDiscount;
+    protected double totalPayment;
+
+    public abstract void showInstructions();
+    public abstract void showSchedule();
+    public abstract void addWaste(String wasteType, double weight);
+    public abstract void calculateRecycleDiscount();
+    public abstract double calculateFinalPayment();
+    public abstract void displaySummary();
+}
+
+class BinItToWinItResident extends WasteManagement {
+    private final Map<Integer, String[]> schedule;
+
+    public BinItToWinItResident(String residentName, String houseNumber, int zone) {
+        this.residentName = residentName;
+        this.houseNumber = houseNumber;
+        this.zone = zone;
+        this.totalWasteWeight = 0.0;
+        this.recycledWasteWeight = 0.0;
+        this.generalWasteWeight = 0.0;
+        this.recycleDiscount = 0;
+        this.totalPayment = 0.0;
+
+        this.schedule = new HashMap<>();
+        this.schedule.put(1, new String[]{"Monday", "Wednesday"});
+        this.schedule.put(2, new String[]{"Monday", "Wednesday"});
+        this.schedule.put(3, new String[]{"Thursday", "Saturday"});
+        this.schedule.put(4, new String[]{"Thursday", "Saturday"});
+        this.schedule.put(5, new String[]{"Tuesday", "Friday"});
+        this.schedule.put(6, new String[]{"Tuesday", "Friday"});
+    }
+
+    @Override
+    public void showInstructions() {
+        System.out.println("""
+                Waste Sorting Instructions:
+                
+                RECYCLABLE WASTE (use recycling bin)
+                Accepted Items:
+                    Plastic: Clean plastic bottles, containers, and bags.
+                    Paper: Newspapers, magazines, cardboard, and office paper.
+                    Metal: Tin cans, aluminum cans, and scrap metal.
+                    Glass: Glass bottles and jars.
+                Preparation:
+                    - Remove food residue, flatten items when possible, and avoid including contaminated materials.
+                
+                GENERAL WASTE (use general waste bin)
+                Accepted Items:
+                    Food Waste: All food scraps, peelings, and leftovers.
+                    Non-recyclables: Soiled paper, certain plastics, ceramics, and broken household items.
+                    Electronics: Old phones, batteries, and small electronic devices.
+                Preparation:
+                    - Secure in bags to avoid spillage, especially for food waste and sharp objects.
+                """);
+    }
+
+    @Override
+    public void showSchedule() {
+        String[] days = schedule.getOrDefault(zone, new String[]{});
+        if (days.length > 0) {
+            System.out.println("Collection Days for Zone " + zone + ": " + String.join(", ", days));
+        } else {
+            System.out.println("No collection schedule found for Zone " + zone + ".");
+        }
+    }
+
+    @Override
+    public void addWaste(String wasteType, double weight) {
+        totalWasteWeight += weight;
+        if (wasteType.equalsIgnoreCase("plastic") || wasteType.equalsIgnoreCase("paper") ||
+            wasteType.equalsIgnoreCase("metal") || wasteType.equalsIgnoreCase("glass")) {
+            System.out.println(weight + " kg of " + wasteType + " added to recycling.");
+            recycledWasteWeight += weight;
+        } else {
+            System.out.println(weight + " kg of " + wasteType + " added to general waste.");
+            generalWasteWeight += weight;
+        }
+    }
+
+    @Override
+    public void calculateRecycleDiscount() {
+        if (totalWasteWeight == 0) {
+            recycleDiscount = 0;
+        } else {
+            double recyclingRate = (recycledWasteWeight / totalWasteWeight) * 100;
+            if (recyclingRate >= 80) {
+                recycleDiscount = 20;
+            } else if (recyclingRate >= 50) {
+                recycleDiscount = 10;
+            } else {
+                recycleDiscount = 5;
+            }
+        }
+        System.out.println("Recycling Discount calculated: " + recycleDiscount + "%");
+    }
+
+    @Override
+    public double calculateFinalPayment() {
+        double recycleDiscountAmount = (recycleDiscount / 100.0) * totalPayment;
+        return totalPayment - recycleDiscountAmount;
+    }
+
+    @Override
+    public void displaySummary() {
+        double finalPayment = calculateFinalPayment();
+        System.out.println("\n--- Waste Management Summary ---");
+        System.out.println("Resident Name: " + residentName);
+        System.out.println("House Number: " + houseNumber);
+        System.out.println("Zone: " + zone);
+        System.out.println("Total Waste Weight: " + String.format("%.2f", totalWasteWeight) + " kg");
+        System.out.println("Recycled Waste Weight: " + String.format("%.2f", recycledWasteWeight) + " kg");
+        System.out.println("General Waste Weight: " + String.format("%.2f", generalWasteWeight) + " kg");
+        System.out.println("Recycling Discount: " + recycleDiscount + "%");
+        System.out.println("Total Payment Before Discount: ₱" + String.format("%.2f", totalPayment));
+        System.out.println("Final Payment After Recycling Discount: ₱" + String.format("%.2f", finalPayment));
+        System.out.println("----------------------------------------");
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+
+        System.out.print("Enter resident name: ");
+        String residentName = scanner.nextLine();
+
+        System.out.print("Enter house number: ");
+        String houseNumber = scanner.nextLine();
+
+        System.out.print("Enter zone (1-6): ");
+        int zone = Integer.parseInt(scanner.nextLine());
+
+        BinItToWinItResident resident = new BinItToWinItResident(residentName, houseNumber, zone);
+
+        resident.showSchedule();
+        resident.showInstructions();
+
+        while (true) {
+            System.out.print("\nEnter waste type (or 'done' to finish): ");
+            String wasteType = scanner.nextLine().toLowerCase();
+            if (wasteType.equals("done")) break;
+
+            System.out.print("Enter weight of " + wasteType + " (in kg): ");
+            double weight = Double.parseDouble(scanner.nextLine());
+            resident.addWaste(wasteType, weight);
+        }
+
+        System.out.print("Enter total payment amount in ₱: ");
+        double totalPayment = Double.parseDouble(scanner.nextLine());
+        resident.totalPayment = totalPayment;
+
+        resident.calculateRecycleDiscount();
+        resident.displaySummary();
+
+        scanner.close();
+    }
+}
